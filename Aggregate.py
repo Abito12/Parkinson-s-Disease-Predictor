@@ -8,6 +8,8 @@ def rms(x, y, z):
     return math.sqrt(x*x + y*y + z*z)
 
 root = "UpdatedData"
+dest = "AggregatedData"
+
 #Add all the users here
 Users = ["APPLE"]
 
@@ -16,7 +18,6 @@ for user in Users:
     path = os.path.join(root, user + "-hdl_accel_updated.csv")
     print(path)
     df = pd.read_csv(path)
-
     #Modify all X attribute values
     df['x.mean'] = df['x.mean'].apply(lambda x: float(x))
     df['x.absolute.deviation']  = df['x.absolute.deviation'].apply(lambda x: float(x))
@@ -57,8 +58,9 @@ for user in Users:
     df['hour'] = df['daytime'].apply(lambda x: x.hour)
     df['minute'] = df['daytime'].apply(lambda x: x.minute)
 
-    #Aggregate accelerometer data by second
-    df_seconds = df.groupby(['daytime', 'day', 'time', 'hour','minute']).agg({
+    #Aggregate accelerometer data by minutess
+
+    df_minutes = df.groupby(['minute']).agg({
         'x.mean' : 'mean',
         'x.standard.deviation' : 'mean',
         'x.absolute.deviation' : 'mean',
@@ -85,56 +87,19 @@ for user in Users:
         'z.PSD.10': 'mean'
     })
 
-    df_seconds.to_csv('test.csv', sep='\t', encoding='utf-8')
+    df_minutes.to_csv('test.csv', sep='\t', encoding='utf-8')
 
-'''
+    # Take RMS of x-y-z channels
+    df_combinedxyz = pd.DataFrame()
+    df_combinedxyz['xyz.mean'] = df_minutes.apply(lambda x: rms(x['x.mean'], x['y.mean'], x['z.mean']), axis=1)
+    df_combinedxyz['xyz.absolute.deviation'] = df_minutes.apply(lambda x: rms(x['x.absolute.deviation'], x['y.absolute.deviation'], x['z.absolute.deviation']), axis=1)
+    df_combinedxyz['xyz.standard.deviation'] = df_minutes.apply(lambda x: rms(x['x.standard.deviation'], x['y.standard.deviation'], x['z.standard.deviation']), axis=1)
+    df_combinedxyz['xyz.max.deviation'] = df_minutes.apply(lambda x: rms(x['x.max.deviation'], x['y.max.deviation'], x['z.max.deviation']), axis=1)
+    df_combinedxyz['xyz.PSD.1'] = df_minutes.apply(lambda x: rms(x['x.PSD.1'], x['y.PSD.1'], x['z.PSD.1']), axis=1)
+    df_combinedxyz['xyz.PSD.3'] = df_minutes.apply(lambda x: rms(x['x.PSD.3'], x['y.PSD.1'], x['z.PSD.1']), axis=1)
+    df_combinedxyz['xyz.PSD.6'] = df_minutes.apply(lambda x: rms(x['x.PSD.6'], x['y.PSD.1'], x['z.PSD.1']), axis=1)
+    df_combinedxyz['xyz.PSD.10'] = df_minutes.apply(lambda x: rms(x['x.PSD.10'], x['y.PSD.1'], x['z.PSD.1']), axis=1)
 
-    #Aggregate accelerometer data by hour
 
-    df_seconds['nsamples'] = 0
 
-    df_hour = df_seconds.groupby(['day', 'hour']).agg({
-        'nsamples' : 'count',
-        'x.mean' : 'mean',
-        'x.standard.deviation' : 'mean',
-        'x.absolute.deviation' : 'mean',
-        'x.max.deviation': 'mean',
-        'x.PSD.1': 'mean',
-        'x.PSD.3': 'mean',
-        'x.PSD.6': 'mean',
-        'x.PSD.10': 'mean',
-        'y.mean' : 'mean',
-        'y.standard.deviation' : 'mean',
-        'y.absolute.deviation' : 'mean',
-        'y.max.deviation': 'mean',
-        'y.PSD.1': 'mean',
-        'y.PSD.3': 'mean',
-        'y.PSD.6': 'mean',
-        'y.PSD.10': 'mean',
-        'z.mean' : 'mean',
-        'z.standard.deviation' : 'mean',
-        'z.absolute.deviation' : 'mean',
-        'z.max.deviation': 'mean',
-        'z.PSD.1': 'mean',
-        'z.PSD.3': 'mean',
-        'z.PSD.6': 'mean',
-        'z.PSD.10': 'mean'
-    })
-    df_hour  = df_hour[df_hour['nsamples'] >= 5]
-    df_hour.to_csv('test1.csv', sep='\t', encoding='utf-8')
-    df_hour = df_hour.reset_index()
-    df_hour.to_csv('test2.csv', sep='\t', encoding='utf-8')
-'''
-
-# Take RMS of x-y-z channels
-df_combinedxyz = pd.DataFrame()
-df_combinedxyz['xyz.mean'] = df.apply(lambda x: rms(x['x.mean'], x['y.mean'], x['z.mean']), axis=1)
-df_combinedxyz['xyz.absolute.deviation'] = df.apply(lambda x: rms(x['x.absolute.deviation'], x['y.absolute.deviation'], x['z.absolute.deviation']), axis=1)
-df_combinedxyz['xyz.standard.deviation'] = df.apply(lambda x: rms(x['x.standard.deviation'], x['y.standard.deviation'], x['z.standard.deviation']), axis=1)
-df_combinedxyz['xyz.max.deviation'] = df.apply(lambda x: rms(x['x.max.deviation'], x['y.max.deviation'], x['z.max.deviation']), axis=1)
-df_combinedxyz['xyz.PSD.1'] = df.apply(lambda x: rms(x['x.PSD.1'], x['y.PSD.1'], x['z.PSD.1']), axis=1)
-df_combinedxyz['xyz.PSD.3'] = df.apply(lambda x: rms(x['x.PSD.3'], x['y.PSD.1'], x['z.PSD.1']), axis=1)
-df_combinedxyz['xyz.PSD.6'] = df.apply(lambda x: rms(x['x.PSD.6'], x['y.PSD.1'], x['z.PSD.1']), axis=1)
-df_combinedxyz['xyz.PSD.10'] = df.apply(lambda x: rms(x['x.PSD.10'], x['y.PSD.1'], x['z.PSD.1']), axis=1)
-
-df_combinedxyz.to_csv('.csv', sep='\t', encoding='utf-8')
+    df_combinedxyz.to_csv(user + '-hdl_accel_aggregated.csv', sep='\t', encoding='utf-8')
