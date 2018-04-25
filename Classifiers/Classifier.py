@@ -39,7 +39,7 @@ print("Using Support Vector Machine\n")
 correct_count = 0
 for i in range(0, len(predSVC)):
     if(np_labels_test[i] == predSVC[i]):
-        correct_count += 1
+        correct_count +=
 print("No of correct predictions = %s\nNo of test instances = %s\n\n" %(correct_count, len(predSVC)))
 
 
